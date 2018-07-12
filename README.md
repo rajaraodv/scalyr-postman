@@ -8,22 +8,24 @@ This project contains ready-to-be used Postman "Collections 2.0" spec for [Scaly
 
 #### 🔥🔥  This means other developers just have import the "collection" spec and simply change the data as needed and interact with the API endpoints right away without worrying about if they are passing the data properly or not!
 
-## 🌟 HTTP POST 
-(already pre-populated sample data, headers, urls, etc)
-<img src="images/post.png" />
-
-## 🌟 HTTP GET 
-(already pre-populated sample data, headers, urls etc)
-<img src="images/get.png" />
 
 ## 🚀 Quick start
-1. Open `Postman | Import | Import From Link` and paste: `https://www.getpostman.com/collections/6b783fad35b61aaab4b4` and click `Import`
+1. Open `Postman | Import | Import From Link` and paste: `https://www.getpostman.com/collections/6b783fad35b61aaab4b4` and click `Import`. 
 <img src="images/import-link.png" />
+PS: You may also import the `postman-collection2.json` file from this repo.
 
 2. Start using it by changing the data as needed.
 
+## 🌟 HTTP POST EXAMPLE
+Notice the already pre-populated sample data, headers, urls, etc. specific to each endpoint.
+<img src="images/post.png" />
 
-## Notes:
+## 🌟 HTTP GET EXAMPLE
+Notice the already pre-populated sample data, headers, urls, etc. specific to each endpoint.
+<img src="images/get.png" />
+
+
+## 📖 Notes:
 - The Postman collection itself is a port from [rajaraodv/oas3.yaml](https://github.com/rajaraodv/scalyr-oas3/blob/master/oas3.yaml) from [Scalyr-oas3](project).
 - OAS3.0 was converted to Postman collection 2.0 by using [APIMatic](https://apimatic.io/transformer)
 - If you update oas3.0 spec on [rajaraodv/scalyr-oas3](https://github.com/rajaraodv/scalyr-oas3), please regenerate the `postman-collections2.0.json` using [APIMatic](https://apimatic.io/transformer) to keep everything upto date.
