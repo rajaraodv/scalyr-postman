@@ -10,9 +10,11 @@ This project contains ready-to-be used Postman "Collections 2.0" spec for [Scaly
 
 
 ## 🚀 Quick start
-1. Open `Postman | Import | Import From Link` and paste: `https://www.getpostman.com/collections/6b783fad35b61aaab4b4` and click `Import`. 
-<img src="images/import-link.png" />
-PS: You may also import the `postman-collection2.json` file from this repo.
+1. Open `Postman | Import | Import From Link` and paste: `https://www.getpostman.com/collections/6b783fad35b61aaab4b4` and click `Import`.  
+
+    PS: You may also directly import the `postman-collection2.json` file from this repo.
+    <img src="images/import-link.png" />
+
 
 2. Start using it by changing the data as needed.
 
