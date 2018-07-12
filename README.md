@@ -4,23 +4,23 @@ This project contains ready-to-be used Postman "Collections 2.0" spec for [Scaly
 
 <img src="images/postman.jpg" />
 
-<a href="https://www.getpostman.com/">Postman</a> is an extremely popular app used by millions of developers to interact with APIs. Postman comes with a specification/feature "collections" that allows people to share a set of APIs with others with **pre-populated sample data, headers, url params, etc**. 
+<a href="https://www.getpostman.com/">Postman</a> is an extremely popular app used by millions of developers to interact with API endpoints. Postman comes with a cool specification/feature called "collections" that allows people to share a set of APIs with others with **pre-populated sample data, headers, url params, etc**. 
 
-This means developers just have to choose an endpoint and replace some data like `tokens` to interact with the server right-away!
+#### 🔥🔥  This means other developers just have import the "collection" spec and simply change the data as needed and interact with the API endpoints right away without worrying about if they are passing the data properly or not!
 
-## HTTP POST 
+## 🌟 HTTP POST 
 (already pre-populated sample data, headers, urls, etc)
 <img src="images/post.png" />
 
-## HTTP GET 
+## 🌟 HTTP GET 
 (already pre-populated sample data, headers, urls etc)
 <img src="images/get.png" />
 
-## Quick start
+## 🚀 Quick start
 1. Open Postman | Import | Import From Link and paste: `https://www.getpostman.com/collections/6b783fad35b61aaab4b4` and import
 <img src="images/import-link.png" />
 
-2. Start using it by changing the values.
+2. Start using it by changing the data as needed.
 
 
 ## Notes:
