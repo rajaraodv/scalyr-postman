@@ -17,11 +17,11 @@ PS: You may also import the `postman-collection2.json` file from this repo.
 2. Start using it by changing the data as needed.
 
 ## 🌟 HTTP POST EXAMPLE
-Notice the already pre-populated sample data, headers, urls, etc. specific to each endpoint.
+Notice the already pre-populated sample data, headers, urls, etc. that are specific to each endpoint.
 <img src="images/post.png" />
 
 ## 🌟 HTTP GET EXAMPLE
-Notice the already pre-populated sample data, headers, urls, etc. specific to each endpoint.
+Notice the already pre-populated sample data, headers, urls, etc. that are specific to each endpoint.
 <img src="images/get.png" />
 
 
