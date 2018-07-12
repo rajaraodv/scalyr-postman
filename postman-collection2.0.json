@@ -1,0 +1,1504 @@
+{
+  "info": {
+    "name": "Scalyr API",
+    "_postman_id": "c26e559f-dc98-4d8c-a6c4-1957926ad95d",
+    "description": "# Scalyr API\nYou can use the Scalyr API to send and retrieve log data directly from Scalyr servers, as well as manage configuration files. It is usually most convenient to use the [Scalyr Agent](https://www.scalyr.com/help/scalyr-agent) to send log files, and to view logs on the web site. We also provide a [Java client library](https://www.scalyr.com/help/java-api) and a [command-line](https://www.scalyr.com/help/command-line) tool. But if you'd like to talk directly to the Scalyr servers from a language other than Java, you've come to the right place.\n\n## API FORMAT\n(Note: this section does not apply to the uploadLogs API, which uses simple text bodies.)\n\nTo invoke a Scalyr API method, send an HTTPS POST to the URL for the method you wish to invoke. The request should have Content-Type \"application/json\", and the body should be a JSON-formatted, UTF-8 encoded string. The response is also a JSON-formatted, UTF-8 encoded string.\n\nThe query, numericQuery, facetQuery, and timeseriesQuery methods can also be invoked via GET, passing arguments in standard URL format. (Remember to encode spaces as %20.) When invoked in this fashion, the response will still be JSON.\n\nThe response will always include a \"status\" property, indicating whether the operation succeeded or failed. Status codes are hierarchical, with slash-delimited components. For example, \"error/client\" and \"error/server\" both indicate that the operation failed, but one indicates that the problem was the client's fault and the other the server's fault. New status values may be added in the future, but they will generally extend (refine) existing values. So when checking the status value, always be prepared for extra text — check startsWith() instead of equals(). Each method may list one or more responses specific to that method. In addition, the following responses are possible for all methods:\n\n  1. Response if the request is somehow incorrect (\"your fault\"):\n\n      ```\n      {\n        \"status\":  \"error/client\",\n        \"message\": \"a human-readable message\"\n      }\n      ```\n\n  2. Response if the server experiences an internal error while processing the request (\"our fault\"):\n\n      ```\n      {\n        \"status\":  \"error/server\",\n        \"message\": \"a human-readable message\"\n      }\n      ```\n\n  If the server is overloaded, or for some other reason is temporarily unable to process the request, it will return a status of \"error/server/backoff\". When this status is returned, you may wish to retry the request after a short delay. You should also retry after a delay in the case of server errors (5xx status code), 429 status code (\"Too Many Requests\"), or a request timeout.\n\nNote that new status values, in particular new error statuses, may be added in the future. Please treat any unexpected status value like \"error\".\n\nWhen an error is returned, the HTTP status code will contain an appropriate non-200 value. Some HTTP client libraries (such as the standard Java library) don't provide access to the response body when the status code is not 200, making it difficult to get a detailed error message. If you provide an \"errorStatus\" request header with value \"always200\", the Scalyr server will return a 200 status code even for errors. In this mode, to detect errors, check the JSON response body for a status string beginning with \"error\". Note that some low-level errors may still yield a non-200 status code.\n",
+    "schema": "https://schema.getpostman.com/json/collection/v2.0.0/"
+  },
+  "item": [
+    {
+      "id": "490b4855-d655-490e-ae66-2c2e86248410",
+      "name": "/api/uploadLogs",
+      "request": {
+        "url": "https://www.scalyr.com/api/uploadLogs?token=%7B%22id%22%3A%7B%22value%22%3A%22write-log-api-key%22%7D%7D&host=%7B%22host%22%3A%7B%22value%22%3A%22aws%22%7D%7D&logfile=%7B%22logfile%22%3A%7B%22value%22%3A%22server.log%22%7D%7D&parser=%7B%22parser%22%3A%7B%22value%22%3A%22myCustomParser%22%7D%7D&Nonce=217.537294366647",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          },
+          {
+            "key": "Content-Type",
+            "value": "text/plain",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "body"
+        },
+        "description": "# UPLOAD LOGS\n[https://www.scalyr.com/api/uploadLogs](https://www.scalyr.com/api/uploadLogs) is a simple API for uploading raw log data to Scalyr servers. It is best suited for lightweight integrations, or uploading individual batches of data from a stateless environment such as Amazon Lambda. For complex use cases, you can also use the addEvents API.\n\nFrom a traditional server environment, it is usually most convenient write your logs to disk, and use the Scalyr Agent to upload them. We also provide a Java client library.\n\n## API FORMAT\nTo use this API method, send an HTTPS request with the following fields:\n\n - URL: https://www.scalyr.com/api/uploadLogs?token={your \"write logs\" token}\n - Method: POST\n - Content-Type: text/plain\n\nThe token URL parameter is a \"Write Logs\" API token for your account. You can manage API tokens at [https://www.scalyr.com/keys](https://www.scalyr.com/keys)\n\nThe request body should consist of one or more log messages, separated by line breaks (\\n, \\r, or \\r\\n). A line break after the last message is optional.\n\n### Note:\nThis API is not currently intended to ingest more than **10 GB/day**. If you are working with higher log volumes, you should use the Scalyr Agent or addEvents API, or contact us at [support@scalyr.com](support@scalyr.com).\n\n## SERVER / LOG ATTRIBUTES\nYou can add parameters to the URL, or as an HTTP request header, to tag messages as coming from a specific server and/or log file:\n\n- **host** specifies the server name.\n\n-  **logfile** specifies the log file name.\n\n-  **parser** specifies which parser will be used to parse these messages (see [/help/parsing-logs](https://www.scalyr.com/help/parsing-logs)).\n\nIn addition, you can add arbitrary URL parameters or request headers beginning with \"server-\". For example, specify ``&server-region=us-east-1` to add a server field named \"region\", with value \"us-east-1\".\n\n#### NOTE:\n - To specify the server name in an HTTP request header, you must create a header named server-host. Creating a header named simply host will cause confusion, since this is a standard HTTP header.\n\n### RETRIES AND NONCES\nTo protect against double-uploads, you can include a **\"Nonce\"** header in the HTTPS request. This header may contain any value. Multiple requests with the same nonce in the same (roughly) one-minute period are ignored.\n\n\nIf you are implementing logic to retry failed requests, it is a good idea to use the Nonce header. Generate a unique value for each request, and re-use the value when retrying a request.\n\n### EXAMPLE\n  The following curl command will upload a single log message:\n\n  ```\n    curl -v 'https://www.scalyr.com/api/uploadLogs?token=BLABLA0RmUusVlr9/zBLABLAzur7hVjKL11w14-' \\\n      -H 'Content-Type: text/plain' -d 'hello, world'\n  ```\n\n  If you'd like to test with multiple lines of input, note that the curl command tends to remove line breaks. Use curl's --data-binary option to avoid this.\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\"\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "c23474f1-b807-4dff-a2fb-e1d82c4cf228"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "7c515d23-ee87-4244-8ab6-aa4d90dcefe0"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "5d44770a-aed3-4281-83ba-3c722bdd9809"
+        }
+      ]
+    },
+    {
+      "id": "f4c924b1-46f4-48bc-89f8-6b50513b9eab",
+      "name": "/addEvents",
+      "request": {
+        "url": "https://www.scalyr.com/addEvents",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"token\": \"BLABLA0RmUusVlr9/zBLABLAzur7hVjKL11w14-\",\r\n  \"session\": \"1b671a64-40d5-491e-99b0-da01ff1f3341\",\r\n  \"sesionInfo\": {\r\n    \"serverHost\": \"front-1\",\r\n    \"serverType\": \"frontend\",\r\n    \"region\": \"us-east-1\"\r\n  },\r\n  \"events\": [\r\n    {\r\n      \"thread\": \"1\",\r\n      \"ts\": \"1530912695846000000\",\r\n      \"type\": 0,\r\n      \"sev\": \"3\",\r\n      \"attrs\": {\r\n        \"message\": \"record retrieved\",\r\n        \"recordId\": 39217,\r\n        \"latency\": 19.4,\r\n        \"length\": 39207\r\n      }\r\n    }\r\n  ],\r\n  \"threads\": [\r\n    {\r\n      \"id\": \"id\",\r\n      \"name\": \"name\"\r\n    }\r\n  ]\r\n}"
+        },
+        "description": "This method is used to insert events (log records). You can insert one or more events per request If you are generating many events per second, you should group them into batches and have each server upload a batch every few seconds.\n\nTo upload raw log text, it is usually easier to use the [uploadLogs](https://www.scalyr.com/help/api-uploadLogs) method.\n\n\n### Note:\nOnly recent events (**events with a timestamp in the last few minutes**) can be uploaded. Due to the way Scalyr Logs indexes events, older events will be discarded. If this is a problem for you, [e-mail us](support@scalyr.com) and we can make adjustments for your account.\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\"\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "9c7a8434-f0f7-4806-b265-474dba15df2f"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "823d2f9d-0bc0-4c02-b396-38536c09647e"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "ef316896-cf3a-4184-bf9d-2838e05b6568"
+        }
+      ]
+    },
+    {
+      "id": "5ace7142-b46d-45da-8fc8-9e33d74f98c9",
+      "name": "/api/query",
+      "request": {
+        "url": "https://www.scalyr.com/api/query?token=BLABLA0RmUusVlr9%2FzBLABLAzur7hVjKL11w14-&queryType=log&filter=%24serverHost%3D%27server-1%27&startTime=startTime&endTime=endTime&maxCount=100&pageMode=tail&columns=columns&continuationToken=continuationToken&priority=low",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw"
+        },
+        "description": "This method is used to retrieve events (log records). You can retrieve all events in a specified time range, or only events matching specific criteria\n\n<br>\nThe query API can also be invoked using POST as shown below:\n\n```\nContent-Type:  application/json;charset=UTF-8\n\nBody:\n{\n  \"token\":             \"xxx\",\n  \"queryType\":         \"log\",\n  \"filter\":            \"...\",\n  \"startTime\":         \"...\",\n  \"endTime\":           \"...\",\n  \"maxCount\":          nnn,\n  \"pageMode\":          \"...\",\n  \"columns\":           \"...\",\n  \"continuationToken\": \"...\",\n  \"priority\":          \"...\"\n}\n```\n\n<br>You can query using `curl` by passing the parameters using URL encoding:\n```\ncurl 'https://www.scalyr.com/api/query?queryType=log&maxCount=1&token=XXX'\n```\nNote: When using GET, remember to encode spaces as %20.\n\n<br>\n\nTry the command-line tool. When invoked with the `--verbose` and `--output=json-pretty` options, the tool will output the raw JSON request and response objects:\n```\nscalyr query --count=5 --verbose --output=json-pretty\n```\n<br>\n\nHere is an example GET query URL:\n\n```\nhttps://www.scalyr.com/api/query?queryType=log&maxCount=5&token=XXX\n```\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\",\r\n  \"matches\": [\r\n    {\r\n      \"timestamp\": \"1393009097459537089\",\r\n      \"message\": \"hello, world\",\r\n      \"severity\": \"3\",\r\n      \"session\": \"sess_d5952fdd-eed2-45f1-8106-b2f2af55dabd\",\r\n      \"thread\": \"28\",\r\n      \"fields\": {\r\n        \"fields\": {\r\n          \"tag\": \"foo\"\r\n        }\r\n      }\r\n    }\r\n  ],\r\n  \"sessions\": {\r\n    \"sess_d5952fdd-eed2-45f1-8106-b2f2af55dabd\": {\r\n      \"serverHost\": \"some.host.name\",\r\n      \"serverIP\": \"1.2.3.4\",\r\n      \"session\": \"sess_d5952fdd-eed2-45f1-8106-b2f2af55dabd\"\r\n    }\r\n  },\r\n  \"executionTime\": 12,\r\n  \"continuationToken\": \"L6_ckjI4BgATVPZkxGaUwQ--\"\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "2e5a84f4-07de-4a25-8b71-048bd25cbefa"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "209a0ba4-3ebb-499a-a806-acc831b02590"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "c961d0e1-ba6d-472b-ac4e-eb1cb62bffe9"
+        }
+      ]
+    },
+    {
+      "id": "175b06e0-94d4-486b-a55b-5858debc85df",
+      "name": "/api/numericQuery",
+      "request": {
+        "url": "https://www.scalyr.com/api/numericQuery?token=BLABLA0RmUusVlr9%2FzBLABLAzur7hVjKL11w14-&queryType=numeric&filter=filter&function=mean%28%3CfieldName%3E%29&startTime=startTime&endTime=endTime&buckets=1&priority=low",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw"
+        },
+        "description": "## NUMERIC QUERY\n  This method is used to retrieve numeric data, e.g. for graphing. You can count the rate of events matching some criterion (e.g. error rate), or retrieve a numeric field (e.g. response size).\n\n<br>\n\n  If you will be be invoking the same query repeatedly, you may want to create a timeseries for the query. This is especially useful if you are using the Scalyr API to feed a home-built dashboard, alerting system, or other automated tool. A timeseries precomputes a numeric query, allowing you to execute queries almost instantaneously, and without exhausting your query execution limit (see below). Use the [createTimeseries](https://www.scalyr.com/help/api?teamToken=GHegMHe4UQtLS%2FiIZsLxxg--#createTimeseries) method to create a [timeseries](https://www.scalyr.com/help/api?teamToken=GHegMHe4UQtLS%2FiIZsLxxg--#timeseriesQuery), and timeseriesQuery to execute queries using a timeseries.\n\n<br>\n\n\n#### URL\n```\nhttps://www.scalyr.com/api/numericQuery\n```\n\n<br>\n\nYou may also use `POST` to query this instead of `GET` and pass the following in the body.\n```\n{\n  \"token\":             \"xxx\",\n  \"queryType\":         \"numeric\",\n  \"filter\":            \"...\",\n  \"function\":          \"...\",\n  \"startTime\":         \"...\",\n  \"endTime\":           \"...\",\n  \"buckets\":           nnn,\n  \"priority\":          \"...\"\n}\n```\n\n<br>\n\nThe numericQuery API can also be invoked using GET, passing the parameters using URL encoding:\n\n```\ncurl 'https://www.scalyr.com/api/numericQuery?queryType=numeric&startTime=1h&token=XXX'\n```\n\nWhen using GET, remember to encode spaces as %20.\n\n<br>\n\nTry the command-line tool. When invoked with the `--verbose` and `--output=json-pretty` options, the tool will output the raw JSON request and response objects:\n\n```\nscalyr numeric-query --start 1h --buckets 10 --verbose --output=json-pretty\n\n```\n<br>\nHere is an example GET query URL:\n\n```\nhttps://www.scalyr.com/api/numericQuery?queryType=numeric&startTime=1h&buckets=60&token=XXX\n```\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\",\r\n  \"values\": [\r\n    1234.5,\r\n    1000\r\n  ],\r\n  \"executionTime\": 12\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "4a3f3969-c91d-4953-af50-63e18163c93e"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "77bc9771-4d5d-4285-a4b3-bae22069679b"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "f15aaf2c-0a73-4065-a903-310ac7e921cc"
+        }
+      ]
+    },
+    {
+      "id": "bcbcd4d6-93db-4f9c-b134-3617cf80e971",
+      "name": "/api/facetQuery",
+      "request": {
+        "url": "https://www.scalyr.com/api/facetQuery?token=BLABLA0RmUusVlr9%2FzBLABLAzur7hVjKL11w14-&queryType=facet&filter=filter&field=field&maxCount=100&startTime=startTime&endTime=endTime&priority=low",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw"
+        },
+        "description": "## FACET QUERY\n  This method is used to retrieve the most common values for a field. For instance, you can find the most common URLs accessed on your site, the most common user-agent strings, or the most common response codes returned.\n\n### URL\n  ```\n  https://www.scalyr.com/api/facetQuery\n  ```\n\n  <br>\n\n  You may also use `POST` and pass the following in the body in JSON format.\n\n  ```\n  {\n    \"token\":             \"xxx\",\n    \"queryType\":         \"facet\",\n    \"filter\":            \"...\",\n    \"field\":             \"...\",\n    \"maxCount\":          nnn,\n    \"startTime\":         \"...\",\n    \"endTime\":           \"...\",\n    \"priority\":          \"...\"\n  }\n  ```\n\n<br>\n\n### Examples\nTo see the query API in action, try the [command-line](https://github.com/scalyr/scalyr-tool) tool. When invoked with the `--verbose` and `--output=json-pretty` options, the tool will output the raw JSON request and response objects:\n\n```\nscalyr facet-query '$dataset=\"accessLog\"' uriPath --start 1h --verbose\n```\n\nHere is an example GET query URL:\n\n```\nhttps://www.scalyr.com/api/facetQuery?queryType=facet&field=uriPath&startTime=1h&token=XXX\n```\n\n### Notes\nIf a very large number of events match your filter, the results will be based on a random subsample of matching events. The subsample will contain at least `500,000` events.\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\",\r\n  \"values\": [\r\n    {\r\n      \"value\": \"aaa\",\r\n      \"count\": 100\r\n    }\r\n  ],\r\n  \"matchCount\": 100,\r\n  \"executionTime\": 12\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "7bf26c04-ce7a-4430-bdb9-e420e3025eb8"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "770ff665-9cd2-439b-be11-1c1b3058df9d"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "2bcf12fe-7f0c-4fb2-9e0f-3c5a5c8c8cad"
+        }
+      ]
+    },
+    {
+      "id": "2883782d-740b-4c24-8e40-5fffa1b08b7f",
+      "name": "/api/createTimeseries",
+      "request": {
+        "url": "https://www.scalyr.com/api/createTimeseries",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"token\": \"write-log-api-key\",\r\n  \"queryType\": \"numeric\",\r\n  \"filter\": \"$serverHost='server-1'\",\r\n  \"function\": \"mean(<fieldName>)\"\r\n}"
+        },
+        "description": "## CREATE TIMESERIES\nThis method is used to create a timeseries. A timeseries precomputes a numeric query, allowing you to execute queries almost instantaneously. This is useful for queries that you execute repeatedly. If you are using the Scalyr API to feed a home-built dashboard, alerting system, or other automated tool, timeseries are for you.\n\nIt may take up to half an hour for a timeseries to be fully created. During that time, you can query the timeseries, but queries may not execute as quickly. Recent data is accelerated before older data.\n\nYou can create at most 10,000 timeseries. To avoid accidental exhaustion of this limit, creation of new timeseries is limited to 100 per hour, with bursts of up to 100. If you need to create timeseries more rapidly, contact us at support@scalyr.com.\n\n### URL\n```\nhttps://www.scalyr.com/api/createTimeseries\n```\n<br>\n\nYou may `POST` to this endpoint with the following parameters.\n\n```\n  Input\n  {\n    \"token\":             \"xxx\",\n    \"queryType\":         \"numeric\",\n    \"filter\":            \"...\",\n    \"function\":          \"...\"\n  }\n```\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\",\r\n  \"timeseriesId\": \"=GHegMHe224UQtLS%2FiIZsLxxg--\",\r\n  \"foundExistingSeries\": true\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "e2f5f374-d14b-407f-8845-20eabe481939"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "d09085a8-91b9-4131-9682-b87a7b7dbb9f"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "b65d0f15-2ad1-4967-a25a-599a0b47f5df"
+        }
+      ]
+    },
+    {
+      "id": "00b2b330-c771-4677-b706-46add1466ba7",
+      "name": "/api/timeseriesQuery",
+      "request": {
+        "url": "https://www.scalyr.com/api/timeseriesQuery",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"token\": \"read-log-api-key\",\r\n  \"queries\": [\r\n    {\r\n      \"timeseriesId\": \"=GHegMHe224UQtLS%2FiIZsLxxg--\",\r\n      \"filter\": \"$serverHost='server-1'\",\r\n      \"function\": \"mean(<fieldName>)\",\r\n      \"startTime\": \"1531332411133\",\r\n      \"endTime\": \"1531332411133\",\r\n      \"buckets\": 1,\r\n      \"priority\": \"low\"\r\n    }\r\n  ]\r\n}"
+        },
+        "description": "## TIMESERIES QUERY\nThis method is used to retrieve numeric data from a previously defined timeseries. It is similar to the [numericQuery](https://www.scalyr.com/help/api?teamToken=GHegMHe4UQtLS%2FiIZsLxxg--#numericQuery) method, but relies on parameters defined by a previous call to createTimeseries, and usually executes in a few milliseconds (plus network latency of course). The timeseriesQuery method also allows you to execute multiple queries in a single request.\n\n### URL\n\n```\nhttps://www.scalyr.com/api/timeseriesQuery\n```\n\n### POST parameters\n\n```\n   {\n      \"token\":             \"xxx\",\n      \"queries\": [\n        {\n\n              \"timeseriesId\":      \"...\",\n              \"filter\":            \"...\",\n              \"function\":          \"...\",\n              \"startTime\":         \"...\",\n              \"endTime\":           \"...\",\n              \"buckets\":           nnn,\n              \"priority\":          \"...\"\n        },\n        ...\n      ]\n    }\n\n```\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\",\r\n  \"results\": [\r\n    {\r\n      \"values\": [\r\n        1234,\r\n        2334\r\n      ],\r\n      \"executionTime\": 5,\r\n      \"foundExistingSeries\": true\r\n    }\r\n  ],\r\n  \"executionTime\": 5\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "bc169a9f-7390-4598-a42e-c3a7dcfd307f"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "d2394a79-f449-4db7-851f-2076568befa3"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "dd63a8be-d1e8-4ff8-a0c7-29c1097eb275"
+        }
+      ]
+    },
+    {
+      "id": "e1c5b281-c842-47b5-880a-d1e6b95bf396",
+      "name": "/getFile",
+      "request": {
+        "url": "https://www.scalyr.com/getFile",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"token\": \"read-configuration-api-key\",\r\n  \"path\": \"/foo\",\r\n  \"expectedVersion\": 3,\r\n  \"prettyPrint\": \"False\"\r\n}"
+        },
+        "description": "\n## GETFILE\nThis method is used to retrieve a configuration file. You can also use this method to block until the file is changed.\n\n### URL\n\n```\nhttps://www.scalyr.com/getFile\n```\n\n<br>\n\nExample `POST`:\n\n```\n  Input\n  {\n    \"token\":           \"xxx\",\n    \"path\":            \"/foo\",\n    \"expectedVersion\": 3,        // optional\n    \"prettyprint\":     false     // optional\n  }\n```\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\",\r\n  \"path\": \"/foo\",\r\n  \"version\": \"v1.0\",\r\n  \"createDate\": 1531345281103,\r\n  \"modDate\": 1531345281103,\r\n  \"content\": \"content\",\r\n  \"stalenessSlop\": 1531345281103\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "f4464d32-4eb8-4ccc-ab6b-90561e3cc497"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "c715341d-ce07-42e0-a71b-ae908fe1f185"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "3e7150b8-bbdc-4902-8a2b-26f36bf108a7"
+        }
+      ]
+    },
+    {
+      "id": "6119ec3b-0cba-4137-91c2-3032d90a8a6e",
+      "name": "/putFile",
+      "request": {
+        "url": "https://www.scalyr.com/putFile",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"token\": \"write-configuration-api-key\",\r\n  \"path\": \"/foo\",\r\n  \"content\": \"This is file's content\",\r\n  \"prettyPrint\": \"False\",\r\n  \"deleteFile\": false,\r\n  \"expectedVersion\": 3\r\n}"
+        },
+        "description": "\n## PUTFILE\n  This method is used to create, update, or delete a configuration file.\n\n### URL\n\n```\n  https://www.scalyr.com/putFile\n```\n\n### Create or update\nTo create or update a file:\n\n```\n{\n  \"token\":           \"xxx\",\n  \"path\":            \"/foo\",\n  \"content\":         \"...\",\n  \"prettyprint\":     false,   // optional\n  \"expectedVersion\": 3        // optional\n}\n```\n\n<br>\n### Delete\nTo delete a configuration file:\n\n```\n{\n  \"token\":           \"xxx\",\n  \"path\":            \"/foo\",\n  \"deleteFile\":      true,\n  \"expectedVersion\": 3        // optional\n}\n```\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\"\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "b648f696-00d2-46fc-89ec-6651f8e20964"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "b40cb073-cdbd-45ca-8559-b861adff29c4"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "0367961e-ccfc-4139-a59a-b8ca747fc26b"
+        }
+      ]
+    },
+    {
+      "id": "a453a93e-0318-453d-b406-942986787621",
+      "name": "/listFiles",
+      "request": {
+        "url": "https://www.scalyr.com/listFiles",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"token\": \"read-configuration-api-key\"\r\n}"
+        },
+        "description": "## LISTFILES\nThis method is used to list all configuration files.\n\n### URL\n\n```\nhttps://www.scalyr.com/listFiles\n```\n\nYou should `POST` the following.\n\n```\n  Input\n  {\n    \"token\": \"xxx\"\n  }\n```\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\",\r\n  \"paths\": [\r\n    \"paths\"\r\n  ]\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "12cbc1c9-f2a9-43b5-a37f-10019885360d"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "04f54037-f5b6-43e5-903a-76e3da43b610"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "eb0f0813-0816-44d6-b0ac-36b7eb6c6112"
+        }
+      ]
+    },
+    {
+      "id": "2c418d9a-c864-45b5-aebd-0c1eda70a078",
+      "name": "/api/inviteUser",
+      "request": {
+        "url": "https://www.scalyr.com/api/inviteUser",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"token\": \"write-configuration-api-key\",\r\n  \"emailAddress\": \"xxx@xyz.com\",\r\n  \"permission\": \"limited\",\r\n  \"allowedSearch\": \"$serverHost='server-1'\",\r\n  \"allowedDashboards\": [\r\n    \"dashboard1\",\r\n    \"dashboard2\"\r\n  ],\r\n  \"groups\": [\r\n    \"group1\",\r\n    \"group2\"\r\n  ]\r\n}"
+        },
+        "description": "## INVITEUSER\nThis method invites a user to a join team and grants them permission to access the team's data. If the user did not have a Scalyr account, an account will be created for them.\n\n### URL\n\n```\nhttps://www.scalyr.com/api/inviteUser\n```\n\n### Input\n\n```\n{\n    \"token\":             \"xxx\",\n    \"emailAddress\":      \"xxx@xxx.xxx\",\n    \"permission\":        \"full\",\n    \"allowedSearch\":     \"\",\n    \"allowedDashboards\": [],\n    \"groups\":            []\n}\n```\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\"\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "44cb3140-1809-4999-818a-6551917d404d"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "51c2bf68-d38c-4a97-a83d-e2e2724a6d28"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "c34f5595-095a-48f5-a841-fe61fc3e3408"
+        }
+      ]
+    },
+    {
+      "id": "1aa3e319-6dd3-479e-824d-ef6970a24141",
+      "name": "/api/editUserPermissions",
+      "request": {
+        "url": "https://www.scalyr.com/api/editUserPermissions",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"token\": \"write-configuration-api-key\",\r\n  \"permission\": \"limited\",\r\n  \"emailAddress\": \"xxx@xxx.xxx\",\r\n  \"allowedSearch\": \"$serverHost='server-1'\",\r\n  \"allowedDashboards\": [\r\n    \"dashboard1\",\r\n    \"dashboard2\"\r\n  ]\r\n}"
+        },
+        "description": "\n## EDITUSERPERMISSIONS\nThis method updates a user's access permissions within a team.\n\n\n### URL\n```\n  https://www.scalyr.com/api/editUserPermissions\n ```\n\n<br>\n\n### Input\n\n```\n  {\n      \"token\":             \"xxx\",\n      \"emailAddress\":      \"xxx@xxx.xxx\",\n      \"permission\":        \"full\",\n      \"allowedSearch\":     \"\",\n      \"allowedDashboards\": [],\n      \"groups\":            []\n  }\n```\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\"\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "8e2bee31-c2fc-45b7-bb36-6794692ac0b9"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "9ed029a4-b070-40b5-a72e-3b5fbd8e50c2"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "0192db82-0031-44ab-9e37-0f65d270f4e5"
+        }
+      ]
+    },
+    {
+      "id": "eb426e2b-1cf9-4653-bf06-9c948aced0aa",
+      "name": "/api/revokeAccess",
+      "request": {
+        "url": "https://www.scalyr.com/api/revokeAccess",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"token\": \"write-configuration-api-key\",\r\n  \"emailAddress\": \"xyz@abc.com\"\r\n}"
+        },
+        "description": "\n## REVOKEACCESS\nThis method revokes a user's access.\n\n### URL\n```\n  https://www.scalyr.com/api/revokeAccess\n```\n### Input\n\n```\n  {\n      \"token\":             \"xxx\",\n      \"emailAddress\":      \"xxx@xxx.xxx\"\n  }\n```\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\"\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "a3fa07df-70a0-40d8-b46f-f45e6396d912"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "8a7835e9-b475-4928-86ac-4fe655564256"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "03a358eb-2369-41e8-bff7-39b3221062a4"
+        }
+      ]
+    },
+    {
+      "id": "a85fcef0-698f-487a-b722-85140cd236f6",
+      "name": "/api/listUsers",
+      "request": {
+        "url": "https://www.scalyr.com/api/listUsers",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"token\": \"read-configuration-api-key\"\r\n}"
+        },
+        "description": "\n## LISTUSERS\nThis method lists all users with access to the team, with their associated permissions.\n\n### URL\n```\n  https://www.scalyr.com/api/listUsers\n```\n\n<br>\n\n### Input\n\n```\n  {\n      \"token\":  \"xxx\"\n  }\n```\n\n### Response example\n\n```\n  {\n    \"users\": [\n      {\n        \"email\": \"alice@example.com\",\n        \"permissions\": \"limited\",\n        \"allowedSearch\": \"$serverHost='server-1'\", // only relevant for ``limited`` permission\n        \"allowedDashboards\": [                     // only relevant for ``limited`` permission\n          \"Log Volume\",\n          \"WebServer\"\n        ]\n      },\n      {\n        \"email\": \"bob@example.com\",\n        \"permissions\": \"full\"\n      }\n    ],\n    \"status\": \"success\"\n  }\n```\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\",\r\n  \"users\": [\r\n    {\r\n      \"email\": \"alice@example.com\",\r\n      \"permissions\": \"limited\",\r\n      \"allowedSearch\": \"$serverHost='server-1' (** Note: only for users with **limited** access)\",\r\n      \"allowedDashboards\": [\r\n        \"**Note: only for users with **limited** access\",\r\n        \"Log Volume\",\r\n        \"WebServer\"\r\n      ]\r\n    },\r\n    {\r\n      \"email\": \"bob@example.com\",\r\n      \"permissions\": \"full\"\r\n    }\r\n  ]\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "a43ed429-1c11-4247-8ed5-175c876e8df9"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "e9d7c242-580d-4e94-9cd3-ed9fdf32b274"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "16dc79cf-335f-4060-b7d6-3fdb42473f54"
+        }
+      ]
+    },
+    {
+      "id": "03119c2e-25c2-42e8-afc6-45141ff0350b",
+      "name": "/api/addGroup",
+      "request": {
+        "url": "https://www.scalyr.com/api/addGroup",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"token\": \"write-configuration-api-key\",\r\n  \"name\": \"My Group 1\",\r\n  \"permission\": \"limited\",\r\n  \"allowedSearch\": \"$serverHost='server-1'\",\r\n  \"allowedDashboards\": [\r\n    \"dashboard1\",\r\n    \"dashboard2\"\r\n  ]\r\n}"
+        },
+        "description": "\n## ADDGROUP\nThis method creates a permission group. See groups for more information.\n\n### URL\n```\n  https://www.scalyr.com/api/addGroup\n```\n\n<br>\n\n### Input\n```\n  {\n      \"token\":             \"xxx\",\n      \"name\":              \"Group Name\",\n      \"permission\":        \"limited\",\n      \"allowedSearch\":     \"\",\n      \"allowedDashboards\": []\n  }\n```\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\"\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "5b161c04-5ad0-41d5-8d0d-bddc51a52280"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "57e31a83-7137-491a-ba50-1abd70695b63"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "ce0d6867-ec54-4427-8b57-4c06b40600d2"
+        }
+      ]
+    },
+    {
+      "id": "745029dc-0f0f-4be0-bccb-6007e216e23b",
+      "name": "/api/editGroupPermissions",
+      "request": {
+        "url": "https://www.scalyr.com/api/editGroupPermissions",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"token\": \"write-configuration-api-key\",\r\n  \"name\": \"My Group 1\",\r\n  \"permission\": \"limited\",\r\n  \"allowedSearch\": \"$serverHost='server-1'\",\r\n  \"allowedDashboards\": [\r\n    \"dashboard1\",\r\n    \"dashboard2\"\r\n  ]\r\n}"
+        },
+        "description": "\n## EDITGROUPPERMISSIONS\nThis method updates a group's access permissions within a team.\n\n### URL\n```\n  https://www.scalyr.com/api/editGroupPermissions\n ```\n\n<br>\n\n### Input\n\n```\n{\n    \"token\":             \"xxx\",\n    \"name\":              \"Group Name\",\n    \"permission\":        \"limited\",\n    \"allowedSearch\":     \"\",\n    \"allowedDashboards\": []\n}\n```\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\"\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "fdcbf648-a575-458e-acf3-1a776d91f986"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "c17c4fe5-1c02-455d-bbc5-44cf768d4f10"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "751ae36e-1d39-4501-94f2-e74cac5b144d"
+        }
+      ]
+    },
+    {
+      "id": "ba8581b8-599c-4dd5-a428-c9636cdeb018",
+      "name": "/api/removeGroup",
+      "request": {
+        "url": "https://www.scalyr.com/api/removeGroup",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"token\": \"write-configuration-api-key\",\r\n  \"name\": \"My Group 1\"\r\n}"
+        },
+        "description": "\n## REMOVEGROUP\nThis method removes a group from the team.\n\n### URL\n```\n https://www.scalyr.com/api/removeGroup\n```\n\n<br>\n\n### Input\n```\n  {\n      \"token\":             \"xxx\",\n      \"name\":              \"Group Name\"\n  }\n```\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\"\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "106bdee4-51a3-4550-9ad6-900ddca83f91"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "b9bc5253-7758-40f3-bc33-76847f66b3fd"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "d87722f0-61d4-4515-b9a6-d2820f2012a9"
+        }
+      ]
+    },
+    {
+      "id": "10f1fa28-e48f-4999-a4ce-ba1c026d833b",
+      "name": "/api/listGroups",
+      "request": {
+        "url": "https://www.scalyr.com/api/listGroups",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"token\": \"read-configuration-api-key\"\r\n}"
+        },
+        "description": "\n## LISTGROUPS\nThis method lists all groups with access to the team, with their associated permissions.\n\n\n### URL\n```\n  https://www.scalyr.com/api/listGroups\n\n```\n\n<br>\n\n### Input\n\n```\n  {\n      \"token\":  \"xxx\"\n  }\n```\n\n### Response example\n\n```\n  {\n    \"groups\": [\n      {\n        \"permissions\": \"limited\",\n        \"name\": \"Group Name\",\n        \"allowedDashboards\": [        // only relevant for ``limited`` permission\n          \"Log Volume\",\n          \"WebServer\"\n        ],\n        \"allowedSearch\": \"$serverHost='server-1'\"        // only relevant for ``limited`` permission\n      },\n      ...\n    ]\n    \"status\": \"success\"\n  }\n```\nThis contains a list of all groups in this team, with their associated permissions. The schema is the same as in the [/scalyr/logs configuration file](https://www.scalyr.com/help/users#groups), but the response will be pure JSON with no comments or other nonstandard features.\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\",\r\n  \"groups\": [\r\n    {\r\n      \"name\": \"My Group 1\",\r\n      \"permissions\": \"limited\",\r\n      \"allowedSearch\": \"$serverHost='server-1' (** Note: only for groups with **limited** access)\",\r\n      \"allowedDashboards\": [\r\n        \"**Note: only for groups with **limited** access\",\r\n        \"Log Volume\",\r\n        \"WebServer\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"My Group 2\",\r\n      \"permissions\": \"full\"\r\n    }\r\n  ]\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "4a28fd81-b1fa-48d5-be3a-6626dab6893f"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "b3ad1c64-15f2-4ef0-87ed-e8482b8e58c7"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "cd7d1166-3612-43a9-8412-b533c0305748"
+        }
+      ]
+    },
+    {
+      "id": "8a86227c-afca-42fa-a672-9e35e08b5803",
+      "name": "/api/addUsersToGroup",
+      "request": {
+        "url": "https://www.scalyr.com/api/addUsersToGroup",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"token\": \"write-configuration-api-key\",\r\n  \"groupName\": \"My Group 1\",\r\n  \"userEmails\": [\r\n    \"xxx@xxx.xxx\",\r\n    \"nnn@nnn.nnn\"\r\n  ]\r\n}"
+        },
+        "description": "\n## ADDUSERSTOGROUP\nThis method adds one or more users to a group.\n\n\n### URL\n```\n  https://www.scalyr.com/api/addUsersToGroup\n\n```\n\n<br>\n\n### Input\n\n```\n  {\n      \"token\":             \"xxx\",\n      \"groupName\":         \"Group Name\",\n      \"userEmails\":        [\"alice@example.com\", \"bob@example.com\"]\n  }\n```\n\n### Response example\n\n```\n  {\n      \"status\":        \"success\",\n      \"updatedUsers\":  [\"xxx@xxx.xxx\", \"nnn@nnn.nnn\"\n  }\n```\nAn error is indicated by a response object whose status field does not begin with success. See the API Overview section for details. Otherwise, the response should have the following structure:\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\",\r\n  \"updatedUsers\": [\r\n    \"xxx@xxx.xxx\",\r\n    \"nnn@nnn.nnn\"\r\n  ]\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "0ebabffe-ad37-4424-ad0b-7d1193ac0c39"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "b13b287a-74dc-484a-95cd-b5f8b3e2b915"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "dface1d2-6e20-4376-a3d6-f2bf7002bfe0"
+        }
+      ]
+    },
+    {
+      "id": "2b70f5e3-a8ec-4014-abd3-cf0d604775a2",
+      "name": "/api/removeUsersFromGroup",
+      "request": {
+        "url": "https://www.scalyr.com/api/removeUsersFromGroup",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"token\": \"write-configuration-api-key\",\r\n  \"groupName\": \"My Group 1\",\r\n  \"userEmails\": [\r\n    \"xxx@xxx.xxx\",\r\n    \"nnn@nnn.nnn\"\r\n  ]\r\n}"
+        },
+        "description": "\n## REMOVEUSERSFROMGROUP\nThis method removes one or more users from a group.\n\n\n### URL\n```\n  https://www.scalyr.com/api/removeUsersFromGroup\n\n```\n\n<br>\n\n### Input\n\n```\n  {\n      \"token\":             \"xxx\",\n      \"groupName\":         \"Group Name\",\n      \"userEmails\":        [\"alice@example.com\", \"bob@example.com\"]\n  }\n```\n\n### Response example\nAn error is indicated by a response object whose status field does not begin with success. See the API Overview section for details. Otherwise, the response should have the following structure:\n\n```\n  {\n      \"status\":        \"success\",\n      \"updatedUsers\":  [\"xxx@xxx.xxx\", \"nnn@nnn.nnn\"\n  }\n```\nAn error is indicated by a response object whose status field does not begin with success. See the API Overview section for details. Otherwise, the response should have the following structure:\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\",\r\n  \"updatedUsers\": [\r\n    \"xxx@xxx.xxx\",\r\n    \"nnn@nnn.nnn\"\r\n  ]\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "4c34b2f4-f757-4ef9-9cf4-57b4f2d128bd"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "7dac4693-58af-4ec7-8573-7215488fb046"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "db03091a-6a31-4aa9-985a-9a9e25960263"
+        }
+      ]
+    },
+    {
+      "id": "9d979882-0009-419a-a27e-86064a4e86df",
+      "name": "/api/listUsersInGroup",
+      "request": {
+        "url": "https://www.scalyr.com/api/listUsersInGroup",
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "disabled": false
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "disabled": false
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"token\": \"read-configuration-api-key\",\r\n  \"groupName\": \"My Group 1\"\r\n}"
+        },
+        "description": "\n## LISTUSERSINGROUP\nThis method lists all users belonging to a group, with their associated permissions.\n\n\n### URL\n```\n  https://www.scalyr.com/api/listUsersInGroup\n```\n\n<br>\n\n### Input\n\n```\n  {\n      \"token\":              \"xxx\",\n      \"groupName\" :         \"nnn\"\n  }\n```\n\n### Response example\n\n```\n  {\n    \"users\": [\n      {\n        \"permissions\": \"xxx\",\n        \"email\": \"xxx@xxx.xxx\",\n        // only available when user has ``limited`` permission\n        \"allowedDashboards\": [\n\n          \"nnn\",\n          \"mmm\"\n        ],\n        // only available when user has ``limited`` permission\n        \"allowedSearch\": \"nnn\",\n        \"groups\": [\"nnn\"]\n      }\n      ...\n    ]\n    \"status\": \"success\"\n  }\n```\n"
+      },
+      "response": [
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"status\": \"success\",\r\n  \"users\": [\r\n    {\r\n      \"email\": \"alice@example.com\",\r\n      \"permissions\": \"limited\",\r\n      \"allowedSearch\": \"$serverHost='server-1' (** Note: only for users with **limited** access)\",\r\n      \"allowedDashboards\": [\r\n        \"**Note: only for users with **limited** access\",\r\n        \"Log Volume\",\r\n        \"WebServer\"\r\n      ]\r\n    },\r\n    {\r\n      \"email\": \"bob@example.com\",\r\n      \"permissions\": \"full\"\r\n    }\r\n  ]\r\n}",
+          "status": "Everything went well",
+          "code": 200,
+          "name": "Response_200",
+          "id": "f9853a7e-a4aa-4145-9dc4-e834669234bf"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Bad request (your fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 400,
+          "name": "Response_400",
+          "id": "808e7be0-8ab2-4dfa-a952-015651f2a708"
+        },
+        {
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "disabled": false
+            }
+          ],
+          "body": "{\r\n  \"message\": \"request must have 'token' field\",\r\n  \"status\": \"error/client/badRequest\"\r\n}",
+          "status": "Server issue (our fault). To validate the error, check the \"status\" using \"beginsWith\" instead of ==",
+          "code": 500,
+          "name": "Response_500",
+          "id": "3d9107d5-fd5b-45c8-bf3c-a95ad4dc914e"
+        }
+      ]
+    }
+  ]
+}
